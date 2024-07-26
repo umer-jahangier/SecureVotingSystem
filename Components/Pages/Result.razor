@@ -1,0 +1,91 @@
+﻿@page "/result"
+@rendermode InteractiveServer
+@inject SecureVotingSystem.Data.ApplicationDbContext _dbContext
+
+
+<div>
+    <h3 class="result-header">RESULT STATUS</h3>
+
+    @if (WinnerParty.TotalVotes != LoserParty.TotalVotes)
+    {
+        <div class="result-container">
+            <div class="result winning-party" style="position: relative; left: 35px; top: 20px;">
+                <h4>WINNER</h4>
+                <h3>@WinnerParty.Name</h3>
+                <p class="vote-count">Total Votes: <span style="font-weight:800; color:black">@WinnerParty.TotalVotes</span></p>
+                <img  src=@WinnerParty.LogoPath alt=@WinnerParty.Name />
+            </div>
+
+            <div class="result losing-party" style="position: relative; right: 35px; top: 20px;">
+                <h4>LOSER</h4>
+                <h3>@LoserParty.Name</h3>
+                <p class="vote-count">Total Votes: <span style="font-weight:800; color:black">@LoserParty.TotalVotes</span></p>
+                <img src=@LoserParty.LogoPath alt=@LoserParty.Name />
+            </div>
+        </div>
+    }
+    else if ((WinnerParty.TotalVotes==LoserParty.TotalVotes)&&(WinnerParty.TotalVotes!=0))
+    {
+        <p>Election Results in a TIE. New Election Dates will be announced soon...</p>
+    }
+    else
+    {
+        <p>Result will be available soon...</p>
+    }
+</div>
+
+@code {
+    private SecureVotingSystem.Data.Party WinnerParty;
+    private SecureVotingSystem.Data.Party LoserParty;
+
+    protected override void OnInitialized()
+    {
+        _dbContext.EnsureDataSeeded();
+        WinnerParty = _dbContext.Parties.OrderByDescending(p => p.TotalVotes).FirstOrDefault();
+        LoserParty = _dbContext.Parties.OrderBy(p => p.TotalVotes).FirstOrDefault();
+    }
+
+}
+
+<style>
+    .result-container {
+        display: flex;
+        justify-content: space-around;
+        margin-top: 20px;
+    }
+
+    .result {
+        border: 2px solid #ccc;
+        padding: 20px;
+        text-align: center;
+        margin: 10px;
+        border-radius: 8px;
+    }
+
+    .winning-party {
+        background-color: #27ae60; 
+        color: #fff; 
+    }
+
+    .losing-party {
+        background-color: #e74c3c;
+        color: #fff; 
+    }
+
+    .vote-count {
+        font-weight: bold;
+    }
+
+    .result-header {
+        font-family:'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+        text-align: center;
+        font-weight: bold;
+        font-size: 28px;
+        margin-top: 10px;
+    }
+
+    .result img {
+        max-width: 150px; 
+        margin-top: 10px;
+    }
+</style>

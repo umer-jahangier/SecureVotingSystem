@@ -1,0 +1,170 @@
+﻿@page "/vote"
+@inject SecureVotingSystem.Services.VoterAuthenticationService VoterAuthService
+@inject SecureVotingSystem.Data.ApplicationDbContext _dbContext
+@inject Microsoft.AspNetCore.Components.NavigationManager Navigation
+@rendermode InteractiveServer
+
+<div class="modal" style="display: @(ShowSuccessMessage ? "block" : "none")">
+    <div class="modal-content">
+        <h3><span class="close" @onclick="CloseModal">&times;</span>@SuccessMessage</h3>
+    </div>
+</div>
+
+<div>
+    <h3 class="vote-header">VOTE</h3>
+
+    @if (!VoterAuthService.IsUserAuthenticated)
+    {
+        <p>You need to authenticate before voting.</p>
+    }
+    else
+    {
+        string partyPTI = "PTI";
+        string partyPMLN = "PMLN";
+
+        <div class="vote-container">
+            <div class="result animated" @onclick="() => CastVote(partyPTI)">
+                <h4>@partyPTI</h4>
+                <img src="pti_flag.jpg" alt="PTI Flag" class="party-logo" />
+                <button class="vote-button" @onclick="() => CastVote(partyPTI)" disabled=@VoterAuthService.HasUserCastedVote>Vote</button>
+            </div>
+
+            <div class="result animated" @onclick="() => CastVote(partyPMLN)">
+                <h4>@partyPMLN</h4>
+                <img style="position:relative; top:20px" src="pmln_flag.jpg" alt="PMLN Flag" class="party-logo" />
+                <button style="position:relative; top:40px" class="vote-button" @onclick="() => CastVote(partyPMLN)" disabled=@VoterAuthService.HasUserCastedVote>Vote</button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+
+    private bool ShowSuccessMessage = false;
+    private string SuccessMessage;
+
+    public string CurrentUserCnic => VoterAuthService.CurrentUserCnic;
+
+    private void CastVote(string party)
+    {
+        if (VoterAuthService.IsUserAuthenticated)
+        {
+            var currentUser = _dbContext.VoterCredentials
+                .FirstOrDefault(v => v.CNIC == VoterAuthService.CurrentUserCnic);
+
+            var selectedParty = _dbContext.Parties
+                .FirstOrDefault(p => p.Name == party);
+
+            if (currentUser != null && !currentUser.HasCastedVote)
+            {
+                currentUser.VotedParty = party;
+                currentUser.HasCastedVote = true;
+                selectedParty.TotalVotes++;
+
+                VoterAuthService.HasUserCastedVote = true;
+                _dbContext.SaveChanges();
+
+                ShowSuccessMessage = true;
+                SuccessMessage = "Vote Casted Successfully";
+            }
+        }
+        else
+        {
+            Navigation.NavigateTo("/login");
+        }
+    }
+
+    private void CloseModal()
+    {
+        ShowSuccessMessage = false;
+        SuccessMessage = string.Empty;
+        Navigation.NavigateTo("/");
+    }
+}
+
+<style>
+    .vote-header {
+        font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+        text-align: center;
+        font-weight: bold;
+        font-size: 28px;
+        margin-top: 10px;
+    }
+
+    .vote-container {
+        display: flex;
+        justify-content: space-around;
+        margin-top: 20px;
+    }
+
+    .result {
+        border: 2px solid #ccc;
+        padding: 20px;
+        text-align: center;
+        margin: 10px;
+        border-radius: 8px;
+        background-color: #27ae60; 
+        color: #fff;
+        width: 200px; 
+        animation: fadeInUp 0.5s ease-in-out; 
+        cursor: pointer;
+    }
+
+    .party-logo {
+        max-width: 100px; 
+        margin-top: 10px;
+    }
+
+    .vote-button {
+        background-color:floralwhite; 
+        color: seagreen; 
+        cursor: pointer;
+        padding: 10px;
+        border: none;
+        border-radius: 4px;
+        margin-top: 10px;
+    }
+
+    .vote-button:hover {
+        background-color: black; 
+    }
+
+    .modal {
+        display: none; 
+        position: fixed; 
+        z-index: 1;
+        left: 0;
+        top: 0;
+        width: 100%; 
+        height: 100%; 
+        overflow: auto; 
+        background-color: rgb(0, 0, 0); 
+        background-color: rgba(0, 0, 0, 0.4);
+    }
+
+    .modal-content {
+        background-color: #fefefe;
+        margin: 15% auto;
+        padding: 10px; 
+        border: 1px solid #888;
+        width: 40%;
+        color: seagreen;
+        text-align: center;
+    }
+
+    .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+    }
+
+    .close:hover,
+    .close:focus {
+        color: black;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    
+</style>

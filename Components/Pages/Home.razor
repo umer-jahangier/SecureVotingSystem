@@ -1,0 +1,109 @@
+﻿@page "/"
+@rendermode InteractiveServer
+@inject NavigationManager Navigation
+@inject SecureVotingSystem.Services.VoterAuthenticationService VoterAuthService
+
+<ErrorBoundary>
+    <div class="text-container" style="display: flex; align-items: center;">
+        <img src="/logo.png" alt="Logo" style="position: absolute;top: 90px; max-width: 200px; border-radius: 50%; left: 7%" @onclick="GoToInsert">
+        <div class="slogan" style="top: 150px; left: 42%">
+            <h2>Elevate the Vision,</h2>
+            <h2>Elect the <span class="change-text">CHANGE!</span></h2>
+        </div>
+    </div>
+    <div class="home-container2">
+        <div class="button-container">
+            @if (!VoterAuthService.IsUserAuthenticated)
+            {
+                <div class="button-div" style=" left: 9%;">
+                    <button class="btn btn-primary" @onclick="GoToLogin">Login</button>
+                </div>
+            }
+            else
+            {
+                <div class="button-div" style=" left: 9%;">
+                    <button class="btn btn-primary" @onclick="GoToLogin">Profile</button>
+                </div>
+            }
+            
+            
+            <div class="button-div" style=" left: 85%;">
+                <button class="btn btn-primary" @onclick="GoToResult">View Results</button>
+            </div>
+        </div>
+    </div>
+</ErrorBoundary>
+
+@code {
+    private void GoToLogin()
+    {
+        Navigation.NavigateTo("/login");
+    }
+
+    private void GoToResult()
+    {
+        Navigation.NavigateTo("/result");
+    }
+
+    private void GoToVote()
+    {
+        Navigation.NavigateTo("/vote");
+    }
+
+    private void GoToInsert()
+    {
+        Navigation.NavigateTo("/insert");
+    }
+}
+
+<style>
+    .home-container2 {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        position: relative;
+    }
+
+    .button-container {
+        position: absolute;
+        display: flex;
+        width: 100%;
+    }
+
+    .button-div {
+        position: absolute;
+    }
+
+    .slogan {
+        position: absolute;
+    }
+
+    .text-container {
+        text-align: center;
+        margin-top: 60px;
+    }
+
+    .btn {
+        padding: 10px 15px;
+        font-size: 16px;
+        cursor: pointer;
+    }
+
+    .btn-primary {
+        background-color: #4caf50;
+        color: #fff;
+        border: none;
+    }
+
+    .btn-secondary {
+        background-color: #757575;
+        color: #fff;
+        border: none;
+    }
+
+    .change-text {
+        color: darkgreen;
+    }
+</style>

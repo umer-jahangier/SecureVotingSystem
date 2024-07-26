@@ -1,0 +1,197 @@
+﻿@page "/login"
+@rendermode InteractiveServer
+@inject NavigationManager Navigation
+@inject SecureVotingSystem.Services.VoterAuthenticationService VoterAuthService
+@inject HttpClient HttpClient
+
+
+<ErrorBoundary>
+    <div class="login-container">
+        @if (VoterAuthService.IsUserAuthenticated)
+        {
+            <div> <span style="color:black"> 
+                    <p><strong>Voter Name:</strong> @VoterAuthService.VoterName</p>
+                    <p><strong>CNIC:</strong> @VoterAuthService.CNIC</p>
+                    <p><strong>Contact Details:</strong> @VoterAuthService.ContactDetails</p>
+                    <p><strong>Vote Status:</strong> @GetVoteStatus()</p>
+                    <button class="btn btn-primary" @onclick="Vote" disabled="@VoterAuthService.HasUserCastedVote">Vote</button>
+                    <button class="btn btn-secondary" @onclick="VoterAuthService.Logout">Logout</button>
+            </span>
+                
+            </div>
+        }
+        else
+        {
+            <div>
+                <h3>Login</h3>
+                <div>
+                    <label for="cnic"><strong>CNIC:</strong></label>
+                    <input id="cnic" class="form-control" @bind="cnic" />
+                    @if (!string.IsNullOrEmpty(cnic) && (cnic.Length != 13 || !cnic.All(char.IsDigit)))
+                    {
+                        <div class="validation-error">CNIC must be 13 digits only.</div>
+                    }
+                </div>
+                <div>
+                    <label for="verificationCode"><strong>Verification Code:</strong></label>
+                    <input id="verificationCode" class="form-control" @bind="verificationCode" />
+                </div>
+                <button @onclick="HandleLogin">Login</button>
+                <button class="btn btn-success" @onclick="GetVerificationCode">Get Verification Code</button>
+                <div class="error-message">@errorMessage</div>
+            </div>
+        }
+    </div>
+</ErrorBoundary>
+
+
+@code {
+    private string cnic;
+    private string verificationCode;
+    private string vCode;
+    private string errorMessage;
+    //private string baseApiAddress = "http://localhost:7287";
+
+    private void HandleLogin()
+    {
+        errorMessage = "";
+
+        if (IsValidInput())
+        {
+            if (!VoterAuthService.VerifyCredentials(cnic, verificationCode))
+            {
+                errorMessage = "Invalid credentials";
+            }
+        }
+    }
+
+    private void Vote()
+    {
+        Navigation.NavigateTo("/vote");
+    }
+
+    private string GetVoteStatus()
+    {
+        return VoterAuthService.HasUserCastedVote ? "Already Voted" : "Not Voted Yet";
+    }
+
+    private async Task GetVerificationCode()
+    {   
+        if (IsValidInput())
+        {
+            vCode = VoterAuthService.GenerateVerificationCode(cnic);
+            if (vCode != "User not found")
+            {
+                errorMessage = $"Your Verification code is: {vCode}";
+            }
+            else
+            {
+                errorMessage = $"Couldn't get Verification Code: {vCode}";
+            }
+            
+        }
+        
+
+
+        /*try
+        {
+            var apiEndpoint = "/api/VerificationCode/generate-code";
+            var response = await HttpClient.PostAsJsonAsync($"{baseApiAddress}{apiEndpoint}", new VerificationCodeRequest { CNIC = cnic });
+            response.EnsureSuccessStatusCode();
+            var result = await response.Content.ReadFromJsonAsync<dynamic>();
+            errorMessage = $"Verification code sent to {VoterAuthService.ContactDetails}.";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error getting verification code: {ex.Message}";
+        }*/
+    }
+
+    private bool IsValidInput()
+    {
+        if (string.IsNullOrEmpty(cnic) || (cnic.Length != 13 || !cnic.All(char.IsDigit)))
+        {
+            return false;
+        }
+        return true;
+    }
+}
+
+
+<style>
+    body {
+        font-family: 'Arial', sans-serif;
+        background-color: black;
+        color: white;
+    }
+
+    .login-container {
+        max-width: 400px;
+        margin: 0 auto;
+        padding: 20px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .user-info {
+        margin-top: 20px;
+        padding: 15px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+    }
+
+    .button-container {
+        margin-top: 15px;
+    }
+
+    label {
+        display: block;
+        margin-bottom: 8px;
+    }
+
+    input {
+        width: 100%;
+        padding: 8px;
+        margin-bottom: 16px;
+        box-sizing: border-box;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+
+    button {
+        background-color: #4caf50;
+        color: #fff;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-right: 10px;
+    }
+
+    .button2 {
+        background-color: darkred;
+        color: #fff;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-right: 10px;
+    }
+
+    button:hover {
+        background-color: #45a049;
+    }
+
+    .error-message {
+        color: #ff0000;
+        margin-top: 10px;
+
+    }
+
+    .validation-error {
+        color: red;
+        margin-top: 5px;
+        margin-bottom: 5px;
+    }
+</style>

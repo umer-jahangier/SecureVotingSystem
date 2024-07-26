@@ -1,0 +1,28 @@
+﻿@inject SecureVotingSystem.Services.VoterAuthenticationService VoterAuthService
+
+<div class="nav-menu">
+    <NavMenuLink Href="/">Home</NavMenuLink>
+    @if (VoterAuthService.IsUserAuthenticated)
+    {
+        <NavMenuLink Href="/vote">Vote</NavMenuLink>
+    }
+    <NavMenuLink Href="/result">Result</NavMenuLink>
+    <NavMenuLink Href="/login">Login</NavMenuLink>
+</div>
+
+
+<style>
+    .nav-menu {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .nav-item {
+        padding: 5px;
+        color: #333;
+    }
+
+    .nav-item:hover {
+        background-color: transparent;
+    }
+</style>

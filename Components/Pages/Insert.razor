@@ -1,0 +1,180 @@
+﻿@page "/insert"
+@inject SecureVotingSystem.Data.ApplicationDbContext _dbContext
+@inject SecureVotingSystem.Services.VoterAuthenticationService VoterAuthService
+@rendermode InteractiveServer
+
+<div class="container">
+    @if (!VoterAuthService.IsAdminAuthenticated)
+    {
+        <h3>Login</h3>
+
+        <div class="form-group">
+            <label for="username">Username:</label>
+            <input id="username" class="form-control" @bind="username" />
+        </div>
+
+        <div class="form-group">
+            <label for="password">Password:</label>
+            <input id="password" type="password" class="form-control" @bind="password" />
+        </div>
+
+        <div class="buttons">
+            <button @onclick="Login" class="btn btn-primary">Login</button>
+        </div>
+        @if (IsSuccess)
+        {
+            <div class="validation-error" >@message</div>
+        }
+    }
+    else
+    {
+        <h3>Add New Voter</h3>
+
+        <div class="form-group">
+            <label for="cnic">CNIC:</label>
+            <input id="cnic" class="form-control" @bind="CNIC" />
+            @if (!string.IsNullOrEmpty(CNIC) && (CNIC.Length != 13 || !CNIC.All(char.IsDigit)))
+            {
+                <div class="validation-error">CNIC must be 13 digits only.</div>
+            }
+        </div>
+
+        <div class="form-group">
+            <label for="voterName">Voter Name:</label>
+            <input id="voterName" class="form-control" @bind="VoterName" />
+            @if (!string.IsNullOrEmpty(VoterName) && VoterName.Any(char.IsDigit))
+            {
+                <div class="validation-error">Voter Name cannot contain numeric characters.</div>
+            }
+        </div>
+
+        <div class="form-group">
+            <label for="contactDetails">Phone Number:</label>
+            <input id="contactDetails" class="form-control" @bind="ContactDetails" />
+            @if (!string.IsNullOrEmpty(ContactDetails) && ContactDetails.Any(char.IsLetter))
+            {
+                <div class="validation-error">Phone No. cannot contain alphabets.</div>
+            }
+        </div>
+
+        <div class="buttons">
+            <button @onclick="EnsureDataSeeded" class="btn btn-primary">Ensure Data Seeding</button>
+            <button @onclick="AddNewVoter" class="btn btn-success">Add New Voter</button>
+        </div>
+
+        @if (IsSuccess)
+        {
+            <div class="result-message" style="color: @(IsError ? "red" : "green")">@message</div>
+        }
+    }
+</div>
+
+@code {
+    private string username;
+    private string password;
+    private string CNIC;
+    private string VerificationCode;
+    private string VoterName;
+    private string ContactDetails;
+    private bool IsSuccess;
+    private bool IsError;
+    private string message;
+
+    private void Login()
+    {
+        if (!VoterAuthService.VerifyAdminCredentials(username, password))
+        {
+            message = "Login Failed, Invalid Credentials!";
+            IsSuccess = true;
+            StartTimer();
+        }
+
+    }
+
+    private void EnsureDataSeeded()
+    {
+        _dbContext.EnsureDataSeeded();
+        Console.WriteLine("Data seeding completed.");
+        message = "Operation Successful!";
+        IsSuccess = true;
+        StartTimer();
+    }
+
+    private void AddNewVoter()
+    {
+        if (IsValidInput())
+        {
+            var existingVoter = _dbContext.VoterCredentials.FirstOrDefault(v => v.CNIC == CNIC);
+            if (existingVoter == null)
+            {
+                VerificationCode = VoterAuthService.GenerateRandomCode();
+                _dbContext.AddVoter(CNIC, VerificationCode, VoterName, ContactDetails);
+                message = "Operation Successful!";
+            }
+            else
+            {
+                message = "Operation Failed, Voter already exists!";
+                IsError = true;
+            }
+
+            IsSuccess = true;
+            StartTimer();
+        }
+    }
+
+    private bool IsValidInput()
+    {
+        if (string.IsNullOrEmpty(CNIC) || (CNIC.Length != 13 || !CNIC.All(char.IsDigit)))
+        {
+            return false;
+        }
+
+        if (string.IsNullOrEmpty(VoterName))
+        {
+            return false;
+        }
+
+        if (string.IsNullOrEmpty(ContactDetails) || ContactDetails.Any(char.IsLetter))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private async void StartTimer()
+    {
+        await Task.Delay(2000);
+        IsSuccess = false;
+    }
+}
+
+
+<style>
+    .container {
+        max-width: 400px;
+        margin: 0 auto;
+        padding: 20px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        margin-top: 50px; /* Adjust the top margin as needed */
+    }
+
+    .form-group {
+        margin-bottom: 15px;
+    }
+
+    .validation-error {
+        color: red;
+        margin-top: 5px;
+    }
+
+    .buttons {
+        margin-top: 20px;
+    }
+
+    .result-message {
+        margin-top: 10px;
+    }
+</style>
